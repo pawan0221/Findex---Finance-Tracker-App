@@ -20,6 +20,10 @@ class _LoginPageState extends State<LoginPage> {
   String? _emailError;
   String? _passwordError;
 
+  // ── ADD THIS ──
+  static const _webClientId =
+      '621500092009-toa7pk60572ujhqo9lrptaqh37jcp62b.apps.googleusercontent.com';
+
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -57,20 +61,34 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // ── GOOGLE SIGN IN ──
+  // ── GOOGLE SIGN IN (FIXED) ──
   Future<void> _googleLogin() async {
     setState(() { _googleLoading = true; _error = null; });
     try {
-      final googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) { setState(() => _googleLoading = false); return; }
+      if (kIsWeb) {
+        // ✅ Web: use signInWithPopup via FirebaseAuth directly
+        final googleProvider = GoogleAuthProvider();
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        final result = await FirebaseAuth.instance.signInWithPopup(googleProvider);
+        if (result.user != null && mounted) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
+      } else {
+        // ✅ Android/iOS: use GoogleSignIn package
+        final googleUser = await GoogleSignIn(
+          clientId: _webClientId,
+        ).signIn();
+        if (googleUser == null) { setState(() => _googleLoading = false); return; }
 
-      final googleAuth = await googleUser.authentication;
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken:     googleAuth.idToken,
-      );
-      await FirebaseAuth.instance.signInWithCredential(credential);
-      if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken:     googleAuth.idToken,
+        );
+        await FirebaseAuth.instance.signInWithCredential(credential);
+        if (mounted) Navigator.pushReplacementNamed(context, '/dashboard');
+      }
     } catch (e) {
       setState(() => _error = 'Google sign-in failed. Try again.');
     } finally {
@@ -182,7 +200,6 @@ class _LoginPageState extends State<LoginPage> {
 
               // Social login buttons
               Row(children: [
-                // Google
                 Expanded(child: _SocialButton(
                   label: 'Google',
                   icon: '🇬',
@@ -191,7 +208,6 @@ class _LoginPageState extends State<LoginPage> {
                   onTap: _googleLogin,
                 )),
                 const SizedBox(width: 12),
-                // Phone OTP
                 Expanded(child: _SocialButton(
                   label: 'Phone OTP',
                   icon: '📱',
@@ -387,7 +403,6 @@ class _PhoneLoginPageState extends State<PhoneLoginPage> {
               ],
 
               if (!_otpSent) ...[
-                // Phone number input
                 Row(children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
@@ -409,7 +424,6 @@ class _PhoneLoginPageState extends State<PhoneLoginPage> {
                   )),
                 ]),
               ] else ...[
-                // OTP input
                 TextField(
                   controller: _otpCtrl,
                   keyboardType: TextInputType.number,
