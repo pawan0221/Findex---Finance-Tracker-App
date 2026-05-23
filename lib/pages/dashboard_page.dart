@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../models/transaction.dart';
 import '../main.dart';
 import '../widgets/app_transitions.dart';
+import 'ai_assistant_page.dart';
 import 'add_transaction_sheet.dart';
 import 'transactions_page.dart';
 import 'budgets_page.dart';
 import 'reports_page.dart';
 import 'account_page.dart';
+import '../widgets/findex_ai_logo.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -223,6 +224,9 @@ class _DashboardPageState extends State<DashboardPage> {
               const SizedBox(height: 15),
               for (var tx in data["transactions"])
                 TransactionTile(title: tx["title"], date: tx["date"], amount: tx["amount"], isExpense: tx["isExpense"]),
+
+              // Bottom padding so FABs don't overlap content
+              const SizedBox(height: 80),
             ],
           ),
         ),
@@ -238,17 +242,17 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            BottomNavIcon(icon: Icons.dashboard,        label: "Overview",     isActive: _currentNavIndex == 0, onTap: () => setState(() => _currentNavIndex = 0)),
-            BottomNavIcon(icon: Icons.swap_horiz,       label: "Transactions", isActive: _currentNavIndex == 1, onTap: () {
+            BottomNavIcon(icon: Icons.dashboard,         label: "Overview",     isActive: _currentNavIndex == 0, onTap: () => setState(() => _currentNavIndex = 0)),
+            BottomNavIcon(icon: Icons.swap_horiz,        label: "Transactions", isActive: _currentNavIndex == 1, onTap: () {
               setState(() => _currentNavIndex = 1);
               Navigator.push(context, SlidePageRoute(page: const TransactionsPage()));
             }),
             const SizedBox(width: 48),
-            BottomNavIcon(icon: Icons.pie_chart_outline, label: "Budgets",    isActive: _currentNavIndex == 2, onTap: () {
+            BottomNavIcon(icon: Icons.pie_chart_outline, label: "Budgets",      isActive: _currentNavIndex == 2, onTap: () {
               setState(() => _currentNavIndex = 2);
               Navigator.push(context, SlidePageRoute(page: const BudgetsPage()));
             }),
-            BottomNavIcon(icon: Icons.bar_chart_outlined, label: "Reports",   isActive: _currentNavIndex == 3, onTap: () {
+            BottomNavIcon(icon: Icons.bar_chart_outlined, label: "Reports",     isActive: _currentNavIndex == 3, onTap: () {
               setState(() => _currentNavIndex = 3);
               Navigator.push(context, SlidePageRoute(page: const ReportsPage()));
             }),
@@ -256,10 +260,34 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ),
 
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF8B6AFF),
-        onPressed: () => showAddTransactionSheet(context, onAdded: () => setState(() {})),
-        child: const Icon(Icons.add, size: 30),
+      // ── ADD TRANSACTION FAB (centre) ──
+      floatingActionButton: Stack(
+        children: [
+          // ── AI Assistant FAB (bottom right) ──
+          Positioned(
+  bottom: 0,
+  right: 0,
+  child: GestureDetector(
+    onTap: () => Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AIAssistantPage()),
+    ),
+    child: const FindexAILogo(size: 56), // ← animated logo as FAB
+  ),
+),
+
+          // ── Add Transaction FAB (centre notch) ──
+          Positioned(
+            bottom: 0,
+            left: MediaQuery.of(context).size.width / 2 - 80,
+            child: FloatingActionButton(
+              heroTag: 'add_fab',
+              backgroundColor: const Color(0xFF8B6AFF),
+              onPressed: () => showAddTransactionSheet(context, onAdded: () => setState(() {})),
+              child: const Icon(Icons.add, size: 30),
+            ),
+          ),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );

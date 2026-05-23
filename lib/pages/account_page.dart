@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'upi_qr_page.dart';
+import 'ai_assistant_page.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -82,6 +83,13 @@ class AccountPage extends StatelessWidget {
   onTap: () => Navigator.push(context,
       MaterialPageRoute(builder: (_) => const UpiQrPage())),
 ),      
+
+_MenuItem(
+  icon: Icons.auto_awesome,
+  label: "AI Financial Assistant",
+  onTap: () => Navigator.push(context,
+      MaterialPageRoute(builder: (_) => const AIAssistantPage())),
+),
 
 
              _MenuItem(icon: Icons.currency_exchange, label: "Currency Converter",

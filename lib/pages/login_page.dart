@@ -101,8 +101,10 @@ class _LoginPageState extends State<LoginPage> {
     if (email.isEmpty) { setState(() => _error = 'Enter your email first'); return; }
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Reset email sent!', style: GoogleFonts.poppins()), backgroundColor: const Color(0xFF8B6AFF)));
+      }
     } catch (_) {
       setState(() => _error = 'Could not send reset email.');
     }
