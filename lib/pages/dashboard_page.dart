@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/transaction.dart';
 import '../main.dart';
 import '../widgets/app_transitions.dart';
+import '../widgets/findex_ai_logo.dart';
 import 'ai_assistant_page.dart';
 import 'add_transaction_sheet.dart';
 import 'transactions_page.dart';
 import 'budgets_page.dart';
 import 'reports_page.dart';
 import 'account_page.dart';
-import '../widgets/findex_ai_logo.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -101,7 +102,10 @@ class _DashboardPageState extends State<DashboardPage> {
                         child: const CircleAvatar(radius: 20, backgroundColor: Color(0xFF8B6AFF), child: Icon(Icons.person, color: Colors.white, size: 22)),
                       ),
                       const SizedBox(width: 10),
-                      Text("Welcome Back, ${FirebaseAuth.instance.currentUser?.displayName?.split(' ').first ?? 'User'}!", style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                      Text(
+                        "Welcome Back, ${FirebaseAuth.instance.currentUser?.displayName?.split(' ').first ?? 'User'}!",
+                        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                      ),
                     ],
                   ),
                   Row(children: [
@@ -115,9 +119,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       child: ValueListenableBuilder<ThemeMode>(
                         valueListenable: themeNotifier,
                         builder: (_, mode, __) => Icon(
-                          mode == ThemeMode.dark
-                              ? Icons.light_mode_outlined
-                              : Icons.dark_mode_outlined,
+                          mode == ThemeMode.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
                           color: Colors.white70,
                         ),
                       ),
@@ -152,7 +154,11 @@ class _DashboardPageState extends State<DashboardPage> {
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(colors: [Color(0xFF1E2A47), Color(0xFF4B3C93)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1E2A47), Color(0xFF4B3C93)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   boxShadow: [BoxShadow(color: Colors.purple.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
                 ),
                 child: Column(
@@ -169,9 +175,9 @@ class _DashboardPageState extends State<DashboardPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        _statItem("Income", data["income"], Colors.greenAccent),
+                        _statItem("Income",   data["income"],   Colors.greenAccent),
                         _statItem("Expenses", data["expenses"], Colors.redAccent),
-                        _statItem("Savings", data["savings"], Colors.cyanAccent),
+                        _statItem("Savings",  data["savings"],  Colors.cyanAccent),
                       ],
                     ),
                   ],
@@ -180,31 +186,60 @@ class _DashboardPageState extends State<DashboardPage> {
 
               const SizedBox(height: 30),
 
-              // PIE CHART
-              Text("Visual Insights", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+              // PIE CHART with legend
+              Text("Visual Insights", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
               const SizedBox(height: 15),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(color: const Color(0xFF1C2235), borderRadius: BorderRadius.circular(20)),
-                child: SizedBox(
-                  height: 180,
-                  child: PieChart(
-                    PieChartData(
-                      borderData: FlBorderData(show: false),
-                      sectionsSpace: 3,
-                      centerSpaceRadius: 40,
-                      sections: [
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 180,
+                      child: PieChart(
+                        PieChartData(
+                          borderData: FlBorderData(show: false),
+                          sectionsSpace: 3,
+                          centerSpaceRadius: 40,
+                          sections: [
+                            for (var item in data["chart"])
+                              PieChartSectionData(
+                                color: item["color"],
+                                value: item["value"].toDouble(),
+                                // Only show title if slice is big enough
+                                title: item["value"] > 20 ? item["title"] : '',
+                                radius: 45,
+                                titleStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Legend
+                    Wrap(
+                      spacing: 16,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
                         for (var item in data["chart"])
-                          PieChartSectionData(
-                            color: item["color"],
-                            value: item["value"].toDouble(),
-                            title: item["title"],
-                            radius: 45,
-                            titleStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
-                          ),
+                          Row(mainAxisSize: MainAxisSize.min, children: [
+                            Container(
+                              width: 10, height: 10,
+                              decoration: BoxDecoration(
+                                color: item["color"],
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '${item["title"]} ${item["value"]}%',
+                              style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12),
+                            ),
+                          ]),
                       ],
                     ),
-                  ),
+                  ],
                 ),
               ),
 
@@ -214,7 +249,7 @@ class _DashboardPageState extends State<DashboardPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text("Recent Transactions", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                  Text("Recent Transactions", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
                   GestureDetector(
                     onTap: () => Navigator.push(context, SlidePageRoute(page: const TransactionsPage())),
                     child: Text("See All", style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF8B6AFF), fontWeight: FontWeight.w500)),
@@ -223,10 +258,15 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
               const SizedBox(height: 15),
               for (var tx in data["transactions"])
-                TransactionTile(title: tx["title"], date: tx["date"], amount: tx["amount"], isExpense: tx["isExpense"]),
+                TransactionTile(
+                  title: tx["title"],
+                  date: tx["date"],
+                  amount: tx["amount"],
+                  isExpense: tx["isExpense"],
+                ),
 
-              // Bottom padding so FABs don't overlap content
-              const SizedBox(height: 80),
+              // Extra bottom padding so FAB doesn't cover content
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -242,17 +282,17 @@ class _DashboardPageState extends State<DashboardPage> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            BottomNavIcon(icon: Icons.dashboard,         label: "Overview",     isActive: _currentNavIndex == 0, onTap: () => setState(() => _currentNavIndex = 0)),
-            BottomNavIcon(icon: Icons.swap_horiz,        label: "Transactions", isActive: _currentNavIndex == 1, onTap: () {
+            BottomNavIcon(icon: Icons.dashboard,          label: "Overview",     isActive: _currentNavIndex == 0, onTap: () => setState(() => _currentNavIndex = 0)),
+            BottomNavIcon(icon: Icons.swap_horiz,         label: "Transactions", isActive: _currentNavIndex == 1, onTap: () {
               setState(() => _currentNavIndex = 1);
               Navigator.push(context, SlidePageRoute(page: const TransactionsPage()));
             }),
             const SizedBox(width: 48),
-            BottomNavIcon(icon: Icons.pie_chart_outline, label: "Budgets",      isActive: _currentNavIndex == 2, onTap: () {
+            BottomNavIcon(icon: Icons.pie_chart_outline,  label: "Budgets",      isActive: _currentNavIndex == 2, onTap: () {
               setState(() => _currentNavIndex = 2);
               Navigator.push(context, SlidePageRoute(page: const BudgetsPage()));
             }),
-            BottomNavIcon(icon: Icons.bar_chart_outlined, label: "Reports",     isActive: _currentNavIndex == 3, onTap: () {
+            BottomNavIcon(icon: Icons.bar_chart_outlined, label: "Reports",      isActive: _currentNavIndex == 3, onTap: () {
               setState(() => _currentNavIndex = 3);
               Navigator.push(context, SlidePageRoute(page: const ReportsPage()));
             }),
@@ -260,23 +300,24 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ),
 
-      // ── ADD TRANSACTION FAB (centre) ──
+      // FABs
       floatingActionButton: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // ── AI Assistant FAB (bottom right) ──
+          // ── AI Assistant FAB — above nav bar, bottom right ──
           Positioned(
-  bottom: 0,
-  right: 0,
-  child: GestureDetector(
-    onTap: () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => AIAssistantPage()),
-    ),
-    child: const FindexAILogo(size: 56), // ← animated logo as FAB
-  ),
-),
+            bottom: 70,
+            right: 16,
+            child: GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AIAssistantPage()),
+              ),
+              child: const FindexAILogo(size: 56),
+            ),
+          ),
 
-          // ── Add Transaction FAB (centre notch) ──
+          // ── Add Transaction FAB — centre notch ──
           Positioned(
             bottom: 0,
             left: MediaQuery.of(context).size.width / 2 - 80,
@@ -323,7 +364,13 @@ class FilterButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: isActive ? const Color(0xFF8B6AFF) : Colors.white24),
         ),
-        child: Text(title, style: GoogleFonts.poppins(color: isActive ? const Color(0xFFBCA9FF) : Colors.white70, fontWeight: FontWeight.w500)),
+        child: Text(
+          title,
+          style: GoogleFonts.poppins(
+            color: isActive ? const Color(0xFFBCA9FF) : Colors.white70,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
     );
   }
@@ -338,10 +385,16 @@ class TransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(isExpense ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded, color: isExpense ? Colors.redAccent : Colors.greenAccent),
+      leading: Icon(
+        isExpense ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+        color: isExpense ? Colors.redAccent : Colors.greenAccent,
+      ),
       title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.w500, color: Colors.white)),
       subtitle: Text(date, style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12)),
-      trailing: Text(amount, style: GoogleFonts.poppins(color: isExpense ? Colors.redAccent : Colors.greenAccent, fontWeight: FontWeight.w600)),
+      trailing: Text(
+        amount,
+        style: GoogleFonts.poppins(color: isExpense ? Colors.redAccent : Colors.greenAccent, fontWeight: FontWeight.w600),
+      ),
     );
   }
 }
@@ -364,7 +417,10 @@ class BottomNavIcon extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: isActive ? const Color(0xFF8B6AFF) : Colors.white70),
-            Text(label, style: GoogleFonts.poppins(fontSize: 12, color: isActive ? const Color(0xFF8B6AFF) : Colors.white60)),
+            Text(
+              label,
+              style: GoogleFonts.poppins(fontSize: 12, color: isActive ? const Color(0xFF8B6AFF) : Colors.white60),
+            ),
           ],
         ),
       ),
