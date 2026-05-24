@@ -15,7 +15,6 @@ import 'account_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
-
   @override
   State<DashboardPage> createState() => _DashboardPageState();
 }
@@ -85,191 +84,189 @@ class _DashboardPageState extends State<DashboardPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F1628),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+      // ── Body with AI FAB overlaid using Stack ──
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // HEADER
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      GestureDetector(
-                        onTap: () => Navigator.push(context, SlidePageRoute(page: const AccountPage())),
-                        child: const CircleAvatar(radius: 20, backgroundColor: Color(0xFF8B6AFF), child: Icon(Icons.person, color: Colors.white, size: 22)),
-                      ),
+                      Row(children: [
+                        GestureDetector(
+                          onTap: () => Navigator.push(context, SlidePageRoute(page: const AccountPage())),
+                          child: const CircleAvatar(radius: 20, backgroundColor: Color(0xFF8B6AFF), child: Icon(Icons.person, color: Colors.white, size: 22)),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          "Welcome Back, ${FirebaseAuth.instance.currentUser?.displayName?.split(' ').first ?? 'User'}!",
+                          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                        ),
+                      ]),
+                      Row(children: [
+                        const Icon(Icons.notifications_none, color: Colors.white70),
+                        const SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () => themeNotifier.value =
+                              themeNotifier.value == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark,
+                          child: ValueListenableBuilder<ThemeMode>(
+                            valueListenable: themeNotifier,
+                            builder: (_, mode, __) => Icon(
+                              mode == ThemeMode.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ),
+                      ]),
+                    ],
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  // FILTER BUTTONS
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(children: [
+                      FilterButton(title: "This Week",     isActive: selectedFilter == "This Week",     onTap: () => setState(() => selectedFilter = "This Week")),
                       const SizedBox(width: 10),
-                      Text(
-                        "Welcome Back, ${FirebaseAuth.instance.currentUser?.displayName?.split(' ').first ?? 'User'}!",
-                        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                      FilterButton(title: "This Month",    isActive: selectedFilter == "This Month",    onTap: () => setState(() => selectedFilter = "This Month")),
+                      const SizedBox(width: 10),
+                      FilterButton(title: "Last Month",    isActive: selectedFilter == "Last Month",    onTap: () => setState(() => selectedFilter = "Last Month")),
+                      const SizedBox(width: 10),
+                      FilterButton(title: "Last 3 Months", isActive: selectedFilter == "Last 3 Months", onTap: () => setState(() => selectedFilter = "Last 3 Months")),
+                    ]),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  // FINANCIAL OVERVIEW CARD
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1E2A47), Color(0xFF4B3C93)],
+                        begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [BoxShadow(color: Colors.purple.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text("Financial Overview", style: GoogleFonts.poppins(color: Colors.white70, fontSize: 16)),
+                        const SizedBox(height: 8),
+                        Text(data["balance"], style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        Text("Total Balance", style: GoogleFonts.poppins(color: Colors.white54, fontSize: 14)),
+                        const SizedBox(height: 20),
+                        const Divider(color: Colors.white24),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _statItem("Income",   data["income"],   Colors.greenAccent),
+                            _statItem("Expenses", data["expenses"], Colors.redAccent),
+                            _statItem("Savings",  data["savings"],  Colors.cyanAccent),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // PIE CHART + LEGEND
+                  Text("Visual Insights", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+                  const SizedBox(height: 15),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(color: const Color(0xFF1C2235), borderRadius: BorderRadius.circular(20)),
+                    child: Column(children: [
+                      SizedBox(
+                        height: 180,
+                        child: PieChart(
+                          PieChartData(
+                            borderData: FlBorderData(show: false),
+                            sectionsSpace: 3,
+                            centerSpaceRadius: 40,
+                            sections: [
+                              for (var item in data["chart"])
+                                PieChartSectionData(
+                                  color: item["color"],
+                                  value: item["value"].toDouble(),
+                                  title: item["value"] > 20 ? item["title"] : '',
+                                  radius: 45,
+                                  titleStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Legend
+                      Wrap(
+                        spacing: 16, runSpacing: 8,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          for (var item in data["chart"])
+                            Row(mainAxisSize: MainAxisSize.min, children: [
+                              Container(
+                                width: 10, height: 10,
+                                decoration: BoxDecoration(color: item["color"], shape: BoxShape.circle),
+                              ),
+                              const SizedBox(width: 6),
+                              Text('${item["title"]} ${item["value"]}%',
+                                  style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12)),
+                            ]),
+                        ],
+                      ),
+                    ]),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // RECENT TRANSACTIONS
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Recent Transactions", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
+                      GestureDetector(
+                        onTap: () => Navigator.push(context, SlidePageRoute(page: const TransactionsPage())),
+                        child: Text("See All", style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF8B6AFF), fontWeight: FontWeight.w500)),
                       ),
                     ],
                   ),
-                  Row(children: [
-                    const Icon(Icons.notifications_none, color: Colors.white70),
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: () => themeNotifier.value =
-                          themeNotifier.value == ThemeMode.dark
-                              ? ThemeMode.light
-                              : ThemeMode.dark,
-                      child: ValueListenableBuilder<ThemeMode>(
-                        valueListenable: themeNotifier,
-                        builder: (_, mode, __) => Icon(
-                          mode == ThemeMode.dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ),
-                  ]),
+                  const SizedBox(height: 15),
+                  for (var tx in data["transactions"])
+                    TransactionTile(title: tx["title"], date: tx["date"], amount: tx["amount"], isExpense: tx["isExpense"]),
+
+                  // Bottom padding so content isn't hidden behind nav
+                  const SizedBox(height: 100),
                 ],
               ),
-
-              const SizedBox(height: 25),
-
-              // FILTER BUTTONS
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    FilterButton(title: "This Week",     isActive: selectedFilter == "This Week",     onTap: () => setState(() => selectedFilter = "This Week")),
-                    const SizedBox(width: 10),
-                    FilterButton(title: "This Month",    isActive: selectedFilter == "This Month",    onTap: () => setState(() => selectedFilter = "This Month")),
-                    const SizedBox(width: 10),
-                    FilterButton(title: "Last Month",    isActive: selectedFilter == "Last Month",    onTap: () => setState(() => selectedFilter = "Last Month")),
-                    const SizedBox(width: 10),
-                    FilterButton(title: "Last 3 Months", isActive: selectedFilter == "Last 3 Months", onTap: () => setState(() => selectedFilter = "Last 3 Months")),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 25),
-
-              // FINANCIAL OVERVIEW CARD
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1E2A47), Color(0xFF4B3C93)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [BoxShadow(color: Colors.purple.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text("Financial Overview", style: GoogleFonts.poppins(color: Colors.white70, fontSize: 16)),
-                    const SizedBox(height: 8),
-                    Text(data["balance"], style: GoogleFonts.poppins(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text("Total Balance", style: GoogleFonts.poppins(color: Colors.white54, fontSize: 14)),
-                    const SizedBox(height: 20),
-                    const Divider(color: Colors.white24),
-                    const SizedBox(height: 10),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _statItem("Income",   data["income"],   Colors.greenAccent),
-                        _statItem("Expenses", data["expenses"], Colors.redAccent),
-                        _statItem("Savings",  data["savings"],  Colors.cyanAccent),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // PIE CHART with legend
-              Text("Visual Insights", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
-              const SizedBox(height: 15),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: const Color(0xFF1C2235), borderRadius: BorderRadius.circular(20)),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: 180,
-                      child: PieChart(
-                        PieChartData(
-                          borderData: FlBorderData(show: false),
-                          sectionsSpace: 3,
-                          centerSpaceRadius: 40,
-                          sections: [
-                            for (var item in data["chart"])
-                              PieChartSectionData(
-                                color: item["color"],
-                                value: item["value"].toDouble(),
-                                // Only show title if slice is big enough
-                                title: item["value"] > 20 ? item["title"] : '',
-                                radius: 45,
-                                titleStyle: GoogleFonts.poppins(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Legend
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.center,
-                      children: [
-                        for (var item in data["chart"])
-                          Row(mainAxisSize: MainAxisSize.min, children: [
-                            Container(
-                              width: 10, height: 10,
-                              decoration: BoxDecoration(
-                                color: item["color"],
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${item["title"]} ${item["value"]}%',
-                              style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12),
-                            ),
-                          ]),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              // RECENT TRANSACTIONS
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Recent Transactions", style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white)),
-                  GestureDetector(
-                    onTap: () => Navigator.push(context, SlidePageRoute(page: const TransactionsPage())),
-                    child: Text("See All", style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF8B6AFF), fontWeight: FontWeight.w500)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 15),
-              for (var tx in data["transactions"])
-                TransactionTile(
-                  title: tx["title"],
-                  date: tx["date"],
-                  amount: tx["amount"],
-                  isExpense: tx["isExpense"],
-                ),
-
-              // Extra bottom padding so FAB doesn't cover content
-              const SizedBox(height: 100),
-            ],
+            ),
           ),
-        ),
+
+          // ── AI FAB — fixed above bottom nav bar ──
+          Positioned(
+            bottom: 80,  // sits above the 64px nav bar
+            right: 16,
+            child: GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AIAssistantPage()),
+              ),
+              child: const FindexAILogo(size: 56),
+            ),
+          ),
+        ],
       ),
 
       // BOTTOM NAV
@@ -300,49 +297,22 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
       ),
 
-      // FABs
-      floatingActionButton: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // ── AI Assistant FAB — above nav bar, bottom right ──
-          Positioned(
-            bottom: 70,
-            right: 16,
-            child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AIAssistantPage()),
-              ),
-              child: const FindexAILogo(size: 56),
-            ),
-          ),
-
-          // ── Add Transaction FAB — centre notch ──
-          Positioned(
-            bottom: 0,
-            left: MediaQuery.of(context).size.width / 2 - 80,
-            child: FloatingActionButton(
-              heroTag: 'add_fab',
-              backgroundColor: const Color(0xFF8B6AFF),
-              onPressed: () => showAddTransactionSheet(context, onAdded: () => setState(() {})),
-              child: const Icon(Icons.add, size: 30),
-            ),
-          ),
-        ],
+      // ── Add Transaction FAB (centre notch) ──
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'add_fab',
+        backgroundColor: const Color(0xFF8B6AFF),
+        onPressed: () => showAddTransactionSheet(context, onAdded: () => setState(() {})),
+        child: const Icon(Icons.add, size: 30),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 
-  Widget _statItem(String title, String value, Color color) {
-    return Column(
-      children: [
-        Text(title, style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 4),
-        Text(value, style: GoogleFonts.poppins(color: color, fontWeight: FontWeight.w600, fontSize: 14)),
-      ],
-    );
-  }
+  Widget _statItem(String title, String value, Color color) => Column(children: [
+    Text(title, style: GoogleFonts.poppins(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+    const SizedBox(height: 4),
+    Text(value, style: GoogleFonts.poppins(color: color, fontWeight: FontWeight.w600, fontSize: 14)),
+  ]);
 }
 
 // ── FILTER BUTTON ──
@@ -353,27 +323,20 @@ class FilterButton extends StatelessWidget {
   const FilterButton({required this.title, required this.isActive, required this.onTap, super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF8B6AFF).withOpacity(0.25) : const Color(0xFF1C2235),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isActive ? const Color(0xFF8B6AFF) : Colors.white24),
-        ),
-        child: Text(
-          title,
-          style: GoogleFonts.poppins(
-            color: isActive ? const Color(0xFFBCA9FF) : Colors.white70,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: isActive ? const Color(0xFF8B6AFF).withOpacity(0.25) : const Color(0xFF1C2235),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isActive ? const Color(0xFF8B6AFF) : Colors.white24),
       ),
-    );
-  }
+      child: Text(title, style: GoogleFonts.poppins(
+        color: isActive ? const Color(0xFFBCA9FF) : Colors.white70, fontWeight: FontWeight.w500)),
+    ),
+  );
 }
 
 // ── TRANSACTION TILE ──
@@ -383,20 +346,16 @@ class TransactionTile extends StatelessWidget {
   const TransactionTile({required this.title, required this.date, required this.amount, required this.isExpense, super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(
-        isExpense ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
-        color: isExpense ? Colors.redAccent : Colors.greenAccent,
-      ),
-      title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.w500, color: Colors.white)),
-      subtitle: Text(date, style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12)),
-      trailing: Text(
-        amount,
-        style: GoogleFonts.poppins(color: isExpense ? Colors.redAccent : Colors.greenAccent, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => ListTile(
+    leading: Icon(
+      isExpense ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+      color: isExpense ? Colors.redAccent : Colors.greenAccent,
+    ),
+    title: Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.w500, color: Colors.white)),
+    subtitle: Text(date, style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12)),
+    trailing: Text(amount, style: GoogleFonts.poppins(
+      color: isExpense ? Colors.redAccent : Colors.greenAccent, fontWeight: FontWeight.w600)),
+  );
 }
 
 // ── BOTTOM NAV ICON ──
@@ -408,22 +367,14 @@ class BottomNavIcon extends StatelessWidget {
   const BottomNavIcon({required this.icon, required this.label, required this.isActive, required this.onTap, super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: isActive ? const Color(0xFF8B6AFF) : Colors.white70),
-            Text(
-              label,
-              style: GoogleFonts.poppins(fontSize: 12, color: isActive ? const Color(0xFF8B6AFF) : Colors.white60),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, color: isActive ? const Color(0xFF8B6AFF) : Colors.white70),
+        Text(label, style: GoogleFonts.poppins(fontSize: 12, color: isActive ? const Color(0xFF8B6AFF) : Colors.white60)),
+      ]),
+    ),
+  );
 }

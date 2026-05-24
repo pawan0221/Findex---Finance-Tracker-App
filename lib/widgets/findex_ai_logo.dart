@@ -129,8 +129,11 @@ class _FindexAIPainter extends CustomPainter {
         final angle = (pi / 180) * (60 * i - 90);
         final x = centerX + radius * cos(angle);
         final y = centerY + radius * sin(angle);
-        if (i == 0) path.moveTo(x, y);
-        else         path.lineTo(x, y);
+        if (i == 0) {
+          path.moveTo(x, y);
+        } else {
+          path.lineTo(x, y);
+        }
       }
       path.close();
       return path;
@@ -184,7 +187,9 @@ class _FindexAIPainter extends CustomPainter {
     // Chart fill
     final fillPath = Path();
     fillPath.moveTo(chartPoints.first.dx, chartPoints.first.dy);
-    for (final pt in chartPoints.skip(1)) fillPath.lineTo(pt.dx, pt.dy);
+    for (final pt in chartPoints.skip(1)) {
+      fillPath.lineTo(pt.dx, pt.dy);
+    }
     fillPath.lineTo(chartPoints.last.dx, cy + r * 0.45);
     fillPath.lineTo(chartPoints.first.dx, cy + r * 0.45);
     fillPath.close();
